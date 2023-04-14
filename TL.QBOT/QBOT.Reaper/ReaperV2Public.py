@@ -3,11 +3,10 @@ import subprocess, time
 def cri(cmd):
     subprocess.call(cmd, shell=True)
 def jack(file_name, line_num, text):
-  lines = open(file_name, 'r').readlines()
-  lines[line_num] = text
-  out = open(file_name, 'w')
-  out.writelines(lines)
-  out.close()
+    lines = open(file_name, 'r').readlines()
+    lines[line_num] = text
+    with open(file_name, 'w') as out:
+        out.writelines(lines)
 
 USER = raw_input("\x1b[1;34mUsername\x1b[1;37m:\x1b[1;31m")
 PASSWR = raw_input("\x1b[1;34mPassword\x1b[1;37m:\x1b[1;31m")

